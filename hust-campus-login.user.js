@@ -6,6 +6,7 @@
 // @author       Yiipu
 // @match        http://172.18.18.61:8080/eportal/*
 // @grant        none
+// @license GPL3
 // @updateURL    https://raw.githubusercontent.com/Yiipu/greasyfork/main/hust-campus-login.user.js
 // @downloadURL  https://raw.githubusercontent.com/Yiipu/greasyfork/main/hust-campus-login.user.js
 // ==/UserScript==
