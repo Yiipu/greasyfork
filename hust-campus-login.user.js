@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HUST 校园网自动登录 + 账号切换
 // @namespace    https://github.com/Yiipu
-// @version      1.0.0
+// @version      1.0.1
 // @description  本地（❗明文❗）保存账号密码，支持自动登录、一键切换账号。
 // @author       Yiipu
 // @match        http://172.18.18.61:8080/eportal/*
@@ -28,6 +28,15 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
     }
 
+    function deleteAccount(username) {
+        const accounts = getAccounts();
+        const _accounts = Object.keys(accounts).reduce((acc, key)=>{
+            if(key != username) acc[key] = accounts[key];
+            return acc;
+        },{})
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(_accounts));
+    }
+
     function setTargetAccount(username) {
         localStorage.setItem(SWITCH_ACCOUNT_KEY, username);
     }
@@ -42,40 +51,26 @@
 
     // 登录页面逻辑
     function handleLoginPage() {
-        const trigger_usr = document.querySelector('#username_tip.input_tip');
-        const trigger_pwd = document.querySelector('#pwd_tip.input_tip');
+        const trigger_usr = document.querySelector('#username_tip');
+        const trigger_pwd = document.querySelector("#pwd_tip");
 
-        if (!(trigger_usr && trigger_pwd)) {
-            console.log('等待触发器加载...');
-            setTimeout(handleLoginPage, 500);
-            return;
-        }
+        const usernameInput = document.querySelector('#username.input');
+        const passwordInput = document.querySelector('#pwd.input');
+        const loginButton = document.querySelector('#loginLink');
 
-        trigger_usr.click();
-        trigger_pwd.click();
-
-        const checkInputs = setInterval(() => {
-            const usernameInput = document.querySelector('#username.input');
-            const passwordInput = document.querySelector('#pwd.input');
-            const loginButton = document.querySelector('#loginLink');
-
-            if (usernameInput && passwordInput && loginButton) {
-                clearInterval(checkInputs);
-                injectLoginUI(usernameInput, passwordInput, loginButton);
-            }
-        }, 500);
-    }
-
-    function injectLoginUI(usernameInput, passwordInput, loginButton) {
         const container = document.querySelector('#connectNetworkPageId');
         const accountSelector = document.createElement('select');
         const saveButton = document.createElement('button');
+        const deleteButton = document.createElement('button');
+
         saveButton.textContent = '保存当前账号';
+        deleteButton.textContent = '删除所选账号';
 
         container.appendChild(accountSelector);
         container.appendChild(saveButton);
+        container.appendChild(deleteButton);
 
-        const accounts = getAccounts();
+        var accounts;
         updateSelector();
 
         accountSelector.addEventListener('change', function () {
@@ -83,12 +78,8 @@
             if (selectedUser && accounts[selectedUser]) {
                 usernameInput.value = selectedUser;
                 passwordInput.value = accounts[selectedUser];
-                loginButton.click(); // 自动登录
-
-                // 如果是从“切换账号”跳转回来，则清除记录
-                if (getTargetAccount() === selectedUser) {
-                    clearTargetAccount();
-                }
+                trigger_usr.focus();
+                trigger_pwd.focus();
             }
         });
 
@@ -98,13 +89,26 @@
             if (user && pass) {
                 saveAccount(user, pass);
                 updateSelector();
-                alert('账号已保存');
+                console.log('账号已保存');
             } else {
-                alert('请输入账号和密码');
+                console.log('请输入账号和密码');
+            }
+        });
+
+        deleteButton.addEventListener('click', function () {
+            const selectedUser = accountSelector.value;
+            if (selectedUser) {
+                deleteAccount(selectedUser);
+                updateSelector();
+                console.log('账号已删除');
+            } else {
+                console.log('请选择账号');
             }
         });
 
         function updateSelector() {
+            accounts = getAccounts();
+
             accountSelector.innerHTML = '';
             const defaultOption = document.createElement('option');
             defaultOption.textContent = '选择账号';
@@ -118,12 +122,15 @@
                 accountSelector.appendChild(option);
             }
 
-            // 如果有待登录账号，自动选择
+            // 如果有待登录账号，自动登录
             const target = getTargetAccount();
             if (target && accounts[target]) {
-                accountSelector.value = target;
                 usernameInput.value = target;
                 passwordInput.value = accounts[target];
+                clearTargetAccount();
+                // TODO：提示密码未被加密，点击输入框后可以手动登录
+                // document.querySelector("#pwd_hk_posi").focus();
+                // document.querySelector("#pwd_hk_posi").click();
                 loginButton.click();
             }
         }
@@ -163,7 +170,7 @@
                 setTargetAccount(selected);
                 sureLogout(); // 页面自身的全局函数
             } else {
-                alert('请选择一个账号');
+                console.log('请选择一个账号');
             }
         });
     }
