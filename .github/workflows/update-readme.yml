@@ -2,7 +2,8 @@ name: Update README with Userscript Info
 
 on:
   push:
-    branches: [master]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   update-readme:
