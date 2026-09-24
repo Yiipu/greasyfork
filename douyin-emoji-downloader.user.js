@@ -2,7 +2,7 @@
 // @name         抖音收藏表情包批量下载
 // @namespace    https://github.com/Yiipu
 // @version      1.0.0
-// @description  打开私信表情面板后，一键采集并下载所有收藏表情包（对应 Python 版 douyin_emoji_downloader.py）
+// @description  打开私信表情面板后，一键采集并下载所有收藏表情包
 // @author       Yiipu
 // @match        https://www.douyin.com/*
 // @grant        GM_download
