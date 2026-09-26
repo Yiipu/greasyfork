@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # 注册步骤需要 git diff $BEFORE..$GITHUB_SHA，浅克隆会 bad object
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
