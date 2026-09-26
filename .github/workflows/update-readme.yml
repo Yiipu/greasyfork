@@ -28,3 +28,21 @@ jobs:
           git add README.md
           git diff --cached --quiet || git commit -m "chore: update script list in README"
           git push
+
+      - name: Register changed scripts to blog nav
+        env:
+          GH_TOKEN: ${{ secrets.BLOG_NAV_TOKEN }}
+        run: |
+          set -euo pipefail
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            CHANGED="$(git ls-files '*.user.js')"
+          else
+            CHANGED="$(git diff --name-only "$BEFORE" "$GITHUB_SHA" -- '*.user.js')"
+          fi
+          for f in $CHANGED; do
+            [ -f "$f" ] || continue   # 已删除的脚本跳过；下线需手动删博客侧对应行
+            jq -n --arg f "$f" '{event_type:"register-script",client_payload:{file:$f}}' \
+              | gh api repos/Yiipu/yiipu.github.io/dispatches --input -
+            echo "registered: $f"
+          done
