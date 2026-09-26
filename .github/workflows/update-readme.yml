@@ -42,9 +42,11 @@ jobs:
           else
             CHANGED="$(git diff --name-only "$BEFORE" "$GITHUB_SHA" -- '*.user.js')"
           fi
-          for f in $CHANGED; do
-            [ -f "$f" ] || continue   # 已删除的脚本跳过；下线需手动删博客侧对应行
-            jq -n --arg f "$f" '{event_type:"register-script",client_payload:{file:$f}}' \
-              | gh api repos/Yiipu/yiipu.github.io/dispatches --input -
-            echo "registered: $f"
-          done
+          # 仅保留仍存在的文件（删除的下线需手动删博客侧对应行）
+          files="$(printf '%s\n' "$CHANGED" | while IFS= read -r f; do if [ -f "$f" ]; then printf '%s\n' "$f"; fi; done; true)"
+          [ -n "$files" ] || exit 0
+          # 一次 push 只发一个批量 dispatch：逐文件并发会触发博客侧 concurrency 丢 pending 事件
+          files_json="$(printf '%s\n' "$files" | jq -R . | jq -s -c .)"
+          jq -n --argjson files "$files_json" '{event_type:"register-script",client_payload:{files:$files}}' \
+            | gh api repos/Yiipu/yiipu.github.io/dispatches --input -
+          echo "registered: $(printf '%s\n' "$files" | tr '\n' ' ')"
